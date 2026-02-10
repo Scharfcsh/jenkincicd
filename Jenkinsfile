@@ -40,7 +40,7 @@ pipeline {
 
                 sh """
                     docker build -t ${IMAGE_NAME}:${VERSION} .
-                    docker login -u "$DOCKERHUB_CRED_USR" -p $CREDS_PSW
+                    docker login -u "$DOCKERHUB_CRED_USR" -p $DOCKERHUB_CRED_PSW
                     docker push ${IMAGE_NAME}:${VERSION}
                 """
             }
