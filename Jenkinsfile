@@ -73,40 +73,58 @@ pipeline {
                     sh """
                         chmod 600 $SSH_KEY
                         ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@${PROD_SERVER} '
+                            echo "🟢 Checking running containers..."
                             docker ps
-                            touch ${PROD_TAG}.txt
+                            
+                            echo "⬇️ Pulling latest prod image..."
+                            docker pull amanadhikari49/cicd:${PROD_TAG}
+                            
+                            echo "🛑 Stopping existing container (if any)..."
+                            docker stop cicd || true
+                            docker rm cicd || true
+                            
+                            echo "▶️ Starting new container from prod image..."
+                            docker run -d \\
+                                --name cicd \\
+                                --restart unless-stopped \\
+                                -p 3000:3000 \\
+                                -e NODE_ENV=production \\
+                                amanadhikari49/cicd:${PROD_TAG}
+                            
+                            echo "✅ Deployment complete"
                         '
                     """
                 }
+
             }
         }
 
         // ========================
         // 3) STATUS STAGE
         // ========================
-        // stage('STATUS') {
-        //     when {
-        //         branch 'main'
-        //     }
+        stage('STATUS') {
+            when {
+                branch 'main'
+            }
 
-        //     steps {
-        //         echo "📡 STATUS: Verifying latest artifact"
+            steps {
+                echo "📡 STATUS: Verifying latest artifact"
 
-        //         // App health
-        //         sh "curl -f ${PROD_URL} || exit 1"
+                // App health
+                sh "curl -f ${PROD_URL} || exit 1"
 
-        //         // Container status
-        //         sshagent(['prod-server-ssh-key']) {
-        //             sh """
-        //                 ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
-        //                     docker ps --filter name=next-app
-        //                 '
-        //             """
-        //         }
+                // Container status
+                sshagent(['prod-server-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
+                            docker ps --filter name=cicd
+                        '
+                    """
+                }
 
-        //         echo "✅ Latest artifact is live and healthy"
-        //     }
-        // }
+                echo "✅ Latest artifact is live and healthy"
+            }
+        }
     }
 
     post {
