@@ -18,7 +18,7 @@ pipeline {
 
         DOCKERHUB_CRED = credentials('dockerhub-creds')
 
-        PROD_SERVER = "ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
+        PROD_SERVER = "ubuntu@ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
         PROD_URL = "http://ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
     }
 
