@@ -50,9 +50,9 @@ pipeline {
         // 2) PROMOTE STAGE
         // ========================
         stage('PROMOTE') {
-            when {
-                branch 'main'
-            }
+            // when {
+            //     branch 'main'
+            // }
 
             steps {
                 echo "🚀 PROMOTE: Promoting artifact to production"
