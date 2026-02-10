@@ -103,10 +103,6 @@ pipeline {
         // 3) STATUS STAGE
         // ========================
         stage('STATUS') {
-            when {
-                branch 'main'
-            }
-
             steps {
                 echo "📡 STATUS: Verifying latest artifact"
 
