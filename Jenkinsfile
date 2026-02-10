@@ -18,7 +18,7 @@ pipeline {
 
         DOCKERHUB_CRED = credentials('dockerhub-creds')
 
-        PROD_SERVER = "ubuntu@ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
+        PROD_SERVER = "ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
         PROD_URL = "http://ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
     }
 
@@ -65,9 +65,14 @@ pipeline {
 
                 echo "📦 Deploying to production..."
 
-                sshagent(['prod-ssh-key']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'prod-ssh-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
+                        chmod 600 $SSH_KEY
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@${PROD_SERVER} '
                             docker ps
                             touch ${PROD_TAG}.txt
                         '
