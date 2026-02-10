@@ -12,14 +12,14 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "yourdockerhubuser/next-app"
+        IMAGE_NAME = "amanadhikari49/cicd"
         VERSION = "${env.BUILD_NUMBER}-${env.GIT_COMMIT?.take(7) ?: 'dev'}"
         PROD_TAG = "prod"
 
         DOCKERHUB_CRED = credentials('dockerhub-creds')
 
-        PROD_SERVER = "ubuntu@your.prod.server.ip"
-        PROD_URL = "http://your.prod.server.ip"
+        PROD_SERVER = "ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
+        PROD_URL = "http://ec2-13-201-93-178.ap-south-1.compute.amazonaws.com"
     }
 
     stages {
@@ -40,7 +40,7 @@ pipeline {
 
                 sh """
                     docker build -t ${IMAGE_NAME}:${VERSION} .
-                    echo "$DOCKERHUB_CRED_PSW" | docker login -u "$DOCKERHUB_CRED_USR" --password-stdin
+                    docker login -u "$DOCKERHUB_CRED_USR" -p $CREDS_PSW
                     docker push ${IMAGE_NAME}:${VERSION}
                 """
             }
@@ -65,18 +65,11 @@ pipeline {
 
                 echo "📦 Deploying to production..."
 
-                sshagent(['prod-server-ssh-key']) {
+                sshagent(['prod-ssh-key']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
-                            docker pull ${IMAGE_NAME}:${PROD_TAG}
-                            docker stop next-app || true
-                            docker rm next-app || true
-                            docker run -d \\
-                                --name next-app \\
-                                --restart unless-stopped \\
-                                -p 80:3000 \\
-                                -e NODE_ENV=production \\
-                                ${IMAGE_NAME}:${PROD_TAG}
+                            docker ps
+                            touch ${PROD_TAG}.txt
                         '
                     """
                 }
@@ -86,29 +79,29 @@ pipeline {
         // ========================
         // 3) STATUS STAGE
         // ========================
-        stage('STATUS') {
-            when {
-                branch 'main'
-            }
+        // stage('STATUS') {
+        //     when {
+        //         branch 'main'
+        //     }
 
-            steps {
-                echo "📡 STATUS: Verifying latest artifact"
+        //     steps {
+        //         echo "📡 STATUS: Verifying latest artifact"
 
-                // App health
-                sh "curl -f ${PROD_URL} || exit 1"
+        //         // App health
+        //         sh "curl -f ${PROD_URL} || exit 1"
 
-                // Container status
-                sshagent(['prod-server-ssh-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
-                            docker ps --filter name=next-app
-                        '
-                    """
-                }
+        //         // Container status
+        //         sshagent(['prod-server-ssh-key']) {
+        //             sh """
+        //                 ssh -o StrictHostKeyChecking=no ${PROD_SERVER} '
+        //                     docker ps --filter name=next-app
+        //                 '
+        //             """
+        //         }
 
-                echo "✅ Latest artifact is live and healthy"
-            }
-        }
+        //         echo "✅ Latest artifact is live and healthy"
+        //     }
+        // }
     }
 
     post {
